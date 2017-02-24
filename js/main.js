@@ -1,11 +1,13 @@
 define([
     'dojo/_base/declare',
+    'dojo/request',
     'dijit/MenuItem',
     'dijit/registry',
     'JBrowse/Plugin'
 ],
 function(
     declare,
+    request,
     dijitMenuItem,
     dijitRegistry,
     JBrowsePlugin
@@ -40,5 +42,11 @@ function(
                 }, 1000);
             })
         },
+
+        searchNCBI: function() {
+            request('https://blast.ncbi.nlm.nih.gov/Blast.cgi').then(function() {
+            }, function() {
+            })
+        }
     });
 });
