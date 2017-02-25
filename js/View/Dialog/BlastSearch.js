@@ -5,6 +5,7 @@ define([
     'dijit/focus',
     'dijit/form/Textarea',
     'JBrowse/View/Dialog/WithActionBar',
+    'JBrowse/Store/RemoteBinaryFile',
     'jszip/jszip',
     'dojo/on',
     'dijit/form/Button'
@@ -16,10 +17,12 @@ function (
     focus,
     TextArea,
     ActionBarDialog,
+    RemoteBinaryFile,
     JSZip,
     on,
     Button
 ) {
+    this.instanceCounter = 0;
     return declare(ActionBarDialog, {
 
         title: 'Search NCBI BLAST',
@@ -88,7 +91,7 @@ function (
                 }
                 var count = 0;
                 console.log(rid);
-                dojo.byId('status_blast').innerHTML += 'Search submitted...Estimated time ' + rtoe / 60 + ' minutes...Waiting...';
+                dojo.byId('status_blast').innerHTML += 'Search submitted...Estimated time ' + (Math.round(rtoe*100/60)/100) + ' minutes...Waiting...';
 
                 var timer = setInterval(function () {
                     request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
@@ -105,22 +108,44 @@ function (
                             console.log('READY!', rid);
                             dojo.byId('status_blast').innerHTML = 'Ready';
                             clearInterval(timer);
-                            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?FORMAT_TYPE=JSON2&CMD=Get&RID=' + rid).then(function (content) {
-                                console.log(content);
-                                console.log(content.length);
-                                var ba = new Uint8Array(content.length);
-                                for (var i = 0; i < ba.length; i++) {
-                                    ba[i] = content.charCodeAt(i);
+
+                            var req = new XMLHttpRequest();
+                            var length;
+                            var url = 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?FORMAT_TYPE=JSON2&CMD=Get&RID=' + rid;
+                            req.open('GET', url, true );
+                            req.responseType = 'arraybuffer';
+                            req.onreadystatechange = function() {
+                                console.log('here')
+                                if (req.readyState == 4) {
+                                    if (req.status == 200 || req.status == 206) {
+                                        if (req.response || req.mozResponseArrayBuffer) {
+                                            try{
+                                                var r = req.responseText;
+                                                if (length && length != r.length && (!truncatedLength || r.length != truncatedLength)) {
+                                                    console.log('error?');
+                                                    return;
+                                                } else {
+                                                    var ba = new Uint8Array(content.length);
+                                                    for (var i = 0; i < ba.length; i++) {
+                                                        ba[i] = content.charCodeAt(i);
+                                                    }
+                                                    var zip = new JSZip();
+                                                    zip.loadAsync(ba.buffer).then(function (file) {
+                                                        console.log(file);
+                                                        // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"
+                                                    });
+                                                    return;
+                                                }
+                                            } catch (x) {
+                                                console.error(''+x, x.stack, x);
+                                                return;
+                                            }
+                                        }
+                                    }
                                 }
-                                var zip = new JSZip();
-                                zip.loadAsync(ba.buffer).then(function (file) {
-                                    console.log(file);
-                                    // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"
-                                });
-                            }, function (error) {
-                                console.error('Failed to get BLAST results');
-                                console.error(error);
-                            });
+                                return null;
+                            };
+                            req.send('');
                         }
                     }, function (error) {
                         console.error('Error checking status');
