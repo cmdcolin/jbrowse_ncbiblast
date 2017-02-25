@@ -44,9 +44,8 @@ function(
         },
 
         searchNCBI: function() {
-            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?QUERY=u00001&DATABASE=nt&PROGRAM=blastn&CMD=Put').then(function(res) {
+            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?QUERY=AAAAAAACCACACCACAGATCAGATCGATGATCAGATCGTACGTACTGAT&DATABASE=nt&PROGRAM=blastn&CMD=Put').then(function(res) {
                 var m = res.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
-                console.log(m[1]);
                 var rid = m[1].match(/RID = (.*)/);
                 var count = 0;
 
@@ -66,7 +65,7 @@ function(
                         console.error('Error checking status');
                         console.error(error);
                     });
-                }, 20000)
+                }, 100000)
             }, function(error) {
                 console.error('Error doing BLAST');
                 console.error(error);
