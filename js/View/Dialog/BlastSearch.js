@@ -80,7 +80,8 @@ function (
 
         searchNCBI: function (query) {
             console.log(query);
-            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?QUERY=' + query + '&DATABASE=nt&PROGRAM=blastn&CMD=Put').then(function (res) {
+            var thisB = this;
+            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?QUERY=' + query + '&DATABASE=' + this.browser.config.blastDB + '&PROGRAM=blastn&CMD=Put').then(function (res) {
                 var m = res.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                 var rid = m[1].match(/RID = (.*)/)[1];
                 var rtoe = +m[1].match(/RTOE = (.*)/)[1];
@@ -99,7 +100,7 @@ function (
                 }, 700);
 
                 var timer = setInterval(function () {
-                    request(browser.config.blastURL 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
+                    request(thisB.browser.config.blastURL + '?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
                         count++;
                         if (count > 100) {
                             dojo.byId('status_blast').innerHTML = 'Error: timed out (requested status > 100 times)';
@@ -126,6 +127,9 @@ function (
                                     var zip = new JSZip();
                                     zip.loadAsync(arrayBuffer).then(function (file) {
                                         console.log(file);
+                                        var root = zip.file(rid + '.json').async('string').then(function(content) {
+                                            console.log(content);
+                                        });
                                         dojo.byId('waiting_blast').innerHTML = '';
                                         clearInterval(waiting);
                                         // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"

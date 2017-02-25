@@ -23,16 +23,16 @@ function () {
             constructor: function (/* args */) {
                 console.log('NCBIBlast plugin starting');
                 var thisB = this;
-                var browser = args.browser;
-                browser.config.blastURL = 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi'
-                browser.afterMilestone('initView', function () {
+                this.browser.config.blastURL = this.browser.config.blastURL || 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi'
+                this.browser.config.blastDB = this.browser.config.blastDB || 'nt'
+                this.browser.afterMilestone('initView', function () {
                     setTimeout(function () {
                         if (!thisB.init) {
                             var blast = new MenuItem({
                                 id: 'menubar_blast',
                                 label: 'NCBI BLAST+',
                                 onClick: function () {
-                                    new SearchDialog({}).show();
+                                    new SearchDialog({ browser: thisB.browser }).show();
                                 }
                             });
                             thisB.browser.addGlobalMenuItem('tools', blast);
