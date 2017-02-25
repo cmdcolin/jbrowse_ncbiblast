@@ -32,7 +32,6 @@ function (
             this.browser = args.browser;
             this.setCallback    = args.setCallback || function () {};
             this.cancelCallback = args.cancelCallback || function () {};
-            this.heightConstraints = { min: 10, max: 750 };
         },
 
         _fillActionBar: function (actionBar) {
@@ -67,6 +66,7 @@ function (
                 dom.create('label', { 'for': 'query_blast', innerHTML: '' }),
                 this.textarea,
                 dom.create('p', { id: 'status_blast' }),
+                dom.create('p', { id: 'waiting_blast' }),
                 dom.create('p', { id: 'results_blast' })
             ]);
 
@@ -82,7 +82,6 @@ function (
             console.log(query);
             request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?QUERY=' + query + '&DATABASE=nt&PROGRAM=blastn&CMD=Put').then(function (res) {
                 var m = res.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
-                console.log(m[0]);
                 var rid = m[1].match(/RID = (.*)/)[1];
                 var rtoe = +m[1].match(/RTOE = (.*)/)[1];
                 if (!rid) {
@@ -90,8 +89,8 @@ function (
                     return;
                 }
                 var count = 0;
-                console.log(rid);
-                dojo.byId('status_blast').innerHTML += 'Search submitted...Estimated time ' + (Math.round(rtoe*100/60)/100) + ' minutes...Waiting...';
+                dojo.byId('status_blast').innerHTML += 'Search submitted...Estimated time ' + (Math.round(rtoe * 100 / 60) / 100) + ' minutes...';
+                dojo.byId('waiting_blast').innerHTML = 'Waiting...';
 
                 var timer = setInterval(function () {
                     request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
@@ -102,50 +101,31 @@ function (
                         var d = data.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                         var stat = d[1].match(/Status=(.*)/)[1];
                         if (stat == 'UNKNOWN' || stat == 'WAITING') {
-                            dojo.byId('status_blast').innerHTML += '.';
+                            dojo.byId('waiting_blast').innerHTML = 'Waiting' + ('.'.repeat(count % 3));
                             console.log('waiting', stat);
                         } else if (stat == 'READY') {
                             console.log('READY!', rid);
                             dojo.byId('status_blast').innerHTML = 'Ready';
                             clearInterval(timer);
 
-                            var req = new XMLHttpRequest();
-                            var length;
                             var url = 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?FORMAT_TYPE=JSON2&CMD=Get&RID=' + rid;
-                            req.open('GET', url, true );
-                            req.responseType = 'arraybuffer';
-                            req.onreadystatechange = function() {
-                                console.log('here')
-                                if (req.readyState == 4) {
-                                    if (req.status == 200 || req.status == 206) {
-                                        if (req.response || req.mozResponseArrayBuffer) {
-                                            try{
-                                                var r = req.responseText;
-                                                if (length && length != r.length && (!truncatedLength || r.length != truncatedLength)) {
-                                                    console.log('error?');
-                                                    return;
-                                                } else {
-                                                    var ba = new Uint8Array(content.length);
-                                                    for (var i = 0; i < ba.length; i++) {
-                                                        ba[i] = content.charCodeAt(i);
-                                                    }
-                                                    var zip = new JSZip();
-                                                    zip.loadAsync(ba.buffer).then(function (file) {
-                                                        console.log(file);
-                                                        // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"
-                                                    });
-                                                    return;
-                                                }
-                                            } catch (x) {
-                                                console.error(''+x, x.stack, x);
-                                                return;
-                                            }
-                                        }
-                                    }
+                            var oReq = new XMLHttpRequest();
+                            oReq.open('GET', url, true);
+                            oReq.responseType = 'arraybuffer';
+
+                            oReq.onload = function (oEvent) {
+                                var arrayBuffer = oReq.response; // Note: not oReq.responseText
+                                if (arrayBuffer) {
+                                    dojo.byId('waiting_blast').innerHTML = '';
+                                    var zip = new JSZip();
+                                    zip.loadAsync(arrayBuffer).then(function (file) {
+                                        console.log(file);
+                                        // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"
+                                    });
+                                    return;
                                 }
-                                return null;
                             };
-                            req.send('');
+                            oReq.send(null);
                         }
                     }, function (error) {
                         console.error('Error checking status');
