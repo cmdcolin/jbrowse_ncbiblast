@@ -22,12 +22,10 @@ function () {
         return declare(JBrowsePlugin, {
             constructor: function (/* args */) {
                 console.log('NCBIBlast plugin starting');
-                this.initSearchMenu();
-            },
-
-            initSearchMenu: function ()  {
                 var thisB = this;
-                this.browser.afterMilestone('initView', function () {
+                var browser = args.browser;
+                browser.config.blastURL = 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi'
+                browser.afterMilestone('initView', function () {
                     setTimeout(function () {
                         if (!thisB.init) {
                             var blast = new MenuItem({

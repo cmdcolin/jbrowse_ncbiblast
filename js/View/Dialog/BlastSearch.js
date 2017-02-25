@@ -89,19 +89,26 @@ function (
                     return;
                 }
                 var count = 0;
+                var wait_counter = 0;
                 dojo.byId('status_blast').innerHTML += 'Search submitted...Estimated time ' + (Math.round(rtoe * 100 / 60) / 100) + ' minutes...';
                 dojo.byId('waiting_blast').innerHTML = 'Waiting...';
 
+                var waiting = setInterval(function () {
+                    dojo.byId('waiting_blast').innerHTML = 'Waiting' + ('.'.repeat(wait_counter % 4));
+                    wait_counter++;
+                }, 700);
+
                 var timer = setInterval(function () {
-                    request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
+                    request(browser.config.blastURL 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
                         count++;
                         if (count > 100) {
+                            dojo.byId('status_blast').innerHTML = 'Error: timed out (requested status > 100 times)';
                             clearInterval(timer);
+                            clearInterval(waiting);
                         }
                         var d = data.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                         var stat = d[1].match(/Status=(.*)/)[1];
                         if (stat == 'UNKNOWN' || stat == 'WAITING') {
-                            dojo.byId('waiting_blast').innerHTML = 'Waiting' + ('.'.repeat(count % 3));
                             console.log('waiting', stat);
                         } else if (stat == 'READY') {
                             console.log('READY!', rid);
@@ -116,10 +123,11 @@ function (
                             oReq.onload = function (oEvent) {
                                 var arrayBuffer = oReq.response; // Note: not oReq.responseText
                                 if (arrayBuffer) {
-                                    dojo.byId('waiting_blast').innerHTML = '';
                                     var zip = new JSZip();
                                     zip.loadAsync(arrayBuffer).then(function (file) {
                                         console.log(file);
+                                        dojo.byId('waiting_blast').innerHTML = '';
+                                        clearInterval(waiting);
                                         // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"
                                     });
                                     return;
