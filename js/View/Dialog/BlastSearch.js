@@ -37,15 +37,6 @@ function (
                 label: 'Search',
                 onClick: dojo.hitch(this, function () {
                     thisB.searchNCBI(this.textarea.value);
-                    this.setCallback && this.setCallback(res);
-                    this.hide();
-                })
-            }).placeAt(actionBar);
-            new Button({
-                label: 'OK',
-                onClick: dojo.hitch(this, function () {
-                    this.setCallback && this.setCallback(res);
-                    this.hide();
                 })
             }).placeAt(actionBar);
 
@@ -61,13 +52,13 @@ function (
         show: function (callback) {
             dojo.addClass(this.domNode, 'blastDialog');
 
-            this.textarea = new TextArea({
-                id: 'blast_query'
-            });
+            this.textarea = dom.create('textarea', { id: 'query_blast', style: { width: '500px', height: '200px' } }),
 
             this.set('content', [
-                dom.create('label', { 'for': 'blast_query', innerHTML: '' }),
-                this.textarea.domNode
+                dom.create('label', { 'for': 'query_blast', innerHTML: '' }),
+                this.textarea,
+                dom.create('p', { id: 'status_blast' }),
+                dom.create('p', { id: 'results_blast' })
             ]);
 
             this.inherited(arguments);
@@ -79,10 +70,15 @@ function (
         },
 
         searchNCBI: function (query) {
-            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?DATABASE=nt&PROGRAM=blastn&CMD=Put&Query=' + query).then(function (res) {
+            console.log(query);
+            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?Query='+query+'&DATABASE=nt&PROGRAM=blastn&CMD=Put').then(function (res) {
                 var m = res.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                 console.log(m[0]);
                 var rid = m[1].match(/RID = (.*)/)[1];
+                if(!rid) {
+                    alert('No RID returned, abort');
+                    return;
+                }
                 var count = 0;
                 console.log(rid);
 
@@ -94,11 +90,16 @@ function (
                         }
                         var d = data.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                         var stat = d[1].match(/Status=(.*)/)[1];
-                        if (stat == 'UNKNOWN' || stat == 'WAITING') console.log('still waiting', stat, rid, count);
+                        if (stat == 'UNKNOWN' || stat == 'WAITING') {
+                            dojo.byId('status_blast').innerHTML = "Waiting ...";
+                            console.log('waiting', stat);
+                        }
                         else if (stat == 'READY') {
                             console.log('READY!', rid);
+                            dojo.byId('status_blast').innerHTML = "Ready";
                             clearInterval(timer);
                             request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?FORMAT_TYPE=text&CMD=Get&RID=' + rid).then(function (blast) {
+                                dojo.byId('results_blast').innerHTML=blast;
                                 console.log(blast);
                             }, function (error) {
                                 console.error('Failed to get BLAST results');

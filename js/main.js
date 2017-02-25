@@ -3,7 +3,7 @@ define([
     'dijit/MenuItem',
     'dijit/Dialog',
     'JBrowse/Plugin',
-    'NCBIBlast/View/Dialog/Search'
+    'NCBIBlast/View/Dialog/BlastSearch'
 ],
 function (
     declare,
@@ -16,7 +16,6 @@ function (
         constructor: function (/* args */) {
             console.log('NCBIBlast plugin starting');
             this.initSearchMenu();
-            this.searchNCBI();
         },
 
         initSearchMenu: function ()  {
@@ -28,7 +27,7 @@ function (
                             id: 'menubar_blast',
                             label: 'NCBI BLAST+',
                             onClick: function () {
-                                new SearchDialog().show();
+                                new SearchDialog({}).show();
                             }
                         });
                         thisB.browser.addGlobalMenuItem('tools', blast);
