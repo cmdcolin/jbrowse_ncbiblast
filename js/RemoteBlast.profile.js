@@ -13,7 +13,7 @@ var profile = {
 
     basePath: '../../../src',
     packages: [
-        {name: 'NCBIBlast', location: '../plugins/NCBIBlast/js' }
+        {name: 'RemoteBlast', location: '../plugins/RemoteBlast/js' }
     ],
 
     layerOptimize: 'closure',
@@ -21,9 +21,9 @@ var profile = {
     selectorEngine: 'acme',
 
     layers: {
-        'NCBIBlast/main': {
+        'RemoteBlast/main': {
             include: [
-                'NCBIBlast'
+                'RemoteBlast'
             ],
             exclude: [ 'JBrowse' ]
         }
@@ -56,7 +56,7 @@ var profile = {
 
         // Files that should not be copied when the “mini” compiler flag is set to true.
         miniExclude: function (filename, mid) {
-            return !(/^NCBIBlast/.test(mid));
+            return !(/^RemoteBlast/.test(mid));
         }
     }
 };

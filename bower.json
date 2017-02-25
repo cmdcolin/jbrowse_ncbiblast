@@ -1,9 +1,9 @@
 {
-  "name": "NCBIBlast",
+  "name": "RemoteBlast",
   "authors": [
     "Colin <colin.diesh@gmail.com>"
   ],
-  "description": "JBrowse plugin to perform NCBI BLAST searches",
+  "description": "JBrowse plugin to perform Remote BLAST searches",
   "main": "js/main.js",
   "license": "MIT",
   "homepage": "",

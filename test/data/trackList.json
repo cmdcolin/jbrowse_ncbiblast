@@ -12,6 +12,6 @@
     }
   ],
   "formatVersion": 1,
-  "plugins": ["NCBIBlast"],
+  "plugins": ["RemoteBlast"],
   "classicMenu": true
 }

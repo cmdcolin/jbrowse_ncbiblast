@@ -1,6 +1,6 @@
 require({
     packages: [
-       { name: 'jszip', location: '../plugins/NCBIBLast/js/jszip/dist' }
+       { name: 'jszip', location: '../plugins/RemoteBlast/js/jszip/dist' }
     ]
 },
 [],
@@ -10,7 +10,7 @@ function () {
         'dijit/MenuItem',
         'dijit/Dialog',
         'JBrowse/Plugin',
-        'NCBIBlast/View/Dialog/BlastSearch'
+        'RemoteBlast/View/Dialog/BlastSearch'
     ],
     function (
         declare,
@@ -21,28 +21,29 @@ function () {
     ) {
         return declare(JBrowsePlugin, {
             constructor: function (/* args */) {
-                console.log('NCBIBlast plugin starting');
+                console.log('RemoteBlast plugin starting');
                 var thisB = this;
-                this.browser.config.blastURL = this.browser.config.blastURL || 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi'
-                this.browser.config.blastDB = this.browser.config.blastDB || 'nt'
+                this.browser.config.blastURL = this.browser.config.blastURL || 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi';
+                this.browser.config.blastDB = this.browser.config.blastDB || 'nt';
                 this.browser.afterMilestone('initView', function () {
+                    // hack to make sure that menu gets initialized
                     setTimeout(function () {
-                        if (!thisB.init) {
-                            var blast = new MenuItem({
-                                id: 'menubar_blast',
-                                label: 'NCBI BLAST+',
-                                onClick: function () {
-                                    new SearchDialog({ browser: thisB.browser }).show();
-                                }
-                            });
-                            thisB.browser.addGlobalMenuItem('tools', blast);
+                        var blast = new MenuItem({
+                            id: 'menubar_blast',
+                            label: 'Search Remote BLAST',
+                            onClick: function () {
+                                new SearchDialog({ browser: thisB.browser }).show();
+                            }
+                        });
+                        var toolsMenu = dijit.byId('dropdownbutton_tools');
+                        var helpMenu = dijit.byId('dropdownbutton_help');
+                        thisB.browser.addGlobalMenuItem('tools', blast);
+                        if (!toolsMenu) {
                             thisB.browser.renderGlobalMenu('tools', { text: 'Tools' }, thisB.browser.menuBar);
-                            // move Tool menu in front of Help menu
-                            var toolsMenu = dijit.byId('dropdownbutton_tools');
-                            var helpMenu = dijit.byId('dropdownbutton_help');
-                            dojo.place(toolsMenu.domNode, helpMenu.domNode, 'before');
-                            thisB.init = true;
+                            toolsMenu = dijit.byId('dropdownbutton_tools');
                         }
+                        // move Tool menu in front of Help menu
+                        dojo.place(toolsMenu.domNode, helpMenu.domNode, 'before');
                     }, 400);
                 });
             }
