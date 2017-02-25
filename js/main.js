@@ -1,10 +1,16 @@
-define([
-    'dojo/_base/declare',
-    'dijit/MenuItem',
-    'dijit/Dialog',
-    'JBrowse/Plugin',
-    'NCBIBlast/View/Dialog/BlastSearch'
-],
+require({
+    packages: [
+       { name: 'jszip', location: '../plugins/NCBIBLast/js/jszip/dist' }
+    ]
+},
+function () {
+    define([
+        'dojo/_base/declare',
+        'dijit/MenuItem',
+        'dijit/Dialog',
+        'JBrowse/Plugin',
+        'NCBIBlast/View/Dialog/BlastSearch'
+    ],
 function (
     declare,
     MenuItem,
@@ -42,4 +48,5 @@ function (
             });
         }
     });
+});
 });

@@ -5,6 +5,7 @@ define([
     'dijit/focus',
     'dijit/form/Textarea',
     'JBrowse/View/Dialog/WithActionBar',
+    'jszip/jszip',
     'dojo/on',
     'dijit/form/Button'
 ],
@@ -15,6 +16,7 @@ function (
     focus,
     TextArea,
     ActionBarDialog,
+    JSZip,
     on,
     Button
 ) {
@@ -31,7 +33,6 @@ function (
         },
 
         _fillActionBar: function (actionBar) {
-            var res = '';
             var thisB = this;
             new Button({
                 label: 'Search',
@@ -52,7 +53,12 @@ function (
         show: function (callback) {
             dojo.addClass(this.domNode, 'blastDialog');
 
-            this.textarea = dom.create('textarea', { id: 'query_blast', style: { width: '500px', height: '200px' } }),
+            this.textarea = dom.create('textarea', {
+                id: 'query_blast', style: {
+                    width: '500px',
+                    height: '200px'
+                }
+            });
 
             this.set('content', [
                 dom.create('label', { 'for': 'query_blast', innerHTML: '' }),
@@ -71,16 +77,17 @@ function (
 
         searchNCBI: function (query) {
             console.log(query);
-            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?Query='+query+'&DATABASE=nt&PROGRAM=blastn&CMD=Put').then(function (res) {
+            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?QUERY=' + query + '&DATABASE=nt&PROGRAM=blastn&CMD=Put').then(function (res) {
                 var m = res.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                 console.log(m[0]);
                 var rid = m[1].match(/RID = (.*)/)[1];
-                if(!rid) {
-                    alert('No RID returned, abort');
+                if (!rid) {
+                    dojo.byId('status_blast').innerHTML += 'Error: no job submitted';
                     return;
                 }
                 var count = 0;
                 console.log(rid);
+                dojo.byId('status_blast').innerHTML += 'Search submitted...Waiting';
 
                 var timer = setInterval(function () {
                     request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
@@ -91,16 +98,18 @@ function (
                         var d = data.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                         var stat = d[1].match(/Status=(.*)/)[1];
                         if (stat == 'UNKNOWN' || stat == 'WAITING') {
-                            dojo.byId('status_blast').innerHTML = "Waiting ...";
+                            dojo.byId('status_blast').innerHTML += '.';
                             console.log('waiting', stat);
-                        }
-                        else if (stat == 'READY') {
+                        }                        else if (stat == 'READY') {
                             console.log('READY!', rid);
-                            dojo.byId('status_blast').innerHTML = "Ready";
+                            dojo.byId('status_blast').innerHTML = 'Ready';
                             clearInterval(timer);
-                            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?FORMAT_TYPE=text&CMD=Get&RID=' + rid).then(function (blast) {
-                                dojo.byId('results_blast').innerHTML=blast;
-                                console.log(blast);
+                            request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?FORMAT_TYPE=JSON2&CMD=Get&RID=' + rid).then(function (content) {
+                                var zip = new JSZip();
+                                zip.loadAsync(content).then(function (file) {
+                                    console.log(file);
+                                    // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"
+                                });
                             }, function (error) {
                                 console.error('Failed to get BLAST results');
                                 console.error(error);
