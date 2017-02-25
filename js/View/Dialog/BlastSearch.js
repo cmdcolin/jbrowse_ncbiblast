@@ -81,13 +81,14 @@ function (
                 var m = res.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                 console.log(m[0]);
                 var rid = m[1].match(/RID = (.*)/)[1];
+                var rtoe = +m[1].match(/RTOE = (.*)/)[1];
                 if (!rid) {
                     dojo.byId('status_blast').innerHTML += 'Error: no job submitted';
                     return;
                 }
                 var count = 0;
                 console.log(rid);
-                dojo.byId('status_blast').innerHTML += 'Search submitted...Waiting';
+                dojo.byId('status_blast').innerHTML += 'Search submitted...Estimated time ' + rtoe / 60 + ' minutes...Waiting...';
 
                 var timer = setInterval(function () {
                     request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&FORMAT_OBJECT=SearchInfo&RID=' + rid).then(function (data) {
@@ -100,13 +101,19 @@ function (
                         if (stat == 'UNKNOWN' || stat == 'WAITING') {
                             dojo.byId('status_blast').innerHTML += '.';
                             console.log('waiting', stat);
-                        }                        else if (stat == 'READY') {
+                        } else if (stat == 'READY') {
                             console.log('READY!', rid);
                             dojo.byId('status_blast').innerHTML = 'Ready';
                             clearInterval(timer);
                             request('https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi?FORMAT_TYPE=JSON2&CMD=Get&RID=' + rid).then(function (content) {
+                                console.log(content);
+                                console.log(content.length);
+                                var ba = new Uint8Array(content.length);
+                                for (var i = 0; i < ba.length; i++) {
+                                    ba[i] = content.charCodeAt(i);
+                                }
                                 var zip = new JSZip();
-                                zip.loadAsync(content).then(function (file) {
+                                zip.loadAsync(ba.buffer).then(function (file) {
                                     console.log(file);
                                     // new_zip.file("hello.txt").async("string"); // a promise of "Hello World\n"
                                 });
