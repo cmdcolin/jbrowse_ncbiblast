@@ -1,5 +1,6 @@
 # Remote
 
+[![Build Status](https://travis-ci.org/cmdcolin/remoteblast.svg?branch=master)](https://travis-ci.org/cmdcolin/remoteblast)
 
 A JBrowse plugin for getting BLAST results from remote services
 
