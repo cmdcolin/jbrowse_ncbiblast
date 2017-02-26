@@ -15,8 +15,9 @@ function (
             this.browser = args.browser;
             this.maxTries = args.maxTries || 100;
             this.refreshRate = args.refreshRate || 10000;
+            this.inProgress = false;
         },
-        cancel: function() {
+        cancel: function () {
             if (this.waiting) {
                 clearInterval(this.waiting);
             }
@@ -56,39 +57,15 @@ function (
                         }
                         var d = data.match(/QBlastInfoBegin([\s\S)]*?)QBlastInfoEnd/);
                         var stat = d[1].match(/Status=(.*)/)[1];
-                        if (stat == 'WAITING') {
+                        if (stat === 'WAITING') {
                             console.log('waiting');
-                        } else if (stat == 'UNKNOWN') {
+                        } else if (stat === 'UNKNOWN') {
                             console.log('unknown', data);
-                        } else if (stat == 'READY') {
+                        } else if (stat === 'READY') {
                             clearInterval(timer);
 
                             var url = thisB.browser.config.blastURL + '?FORMAT_TYPE=JSON2&CMD=Get&RID=' + rid;
-                            var oReq = new XMLHttpRequest();
-                            oReq.open('GET', url, true);
-                            oReq.responseType = 'arraybuffer';
-
-                            oReq.onload = function (/* oEvent */) {
-                                dojo.destroy('waiting_blast');
-                                clearInterval(waiting);
-
-                                var arrayBuffer = oReq.response; // Note: not oReq.responseText
-                                if (arrayBuffer) {
-                                    JSZip.loadAsync(arrayBuffer).then(function (zipFile) {
-                                        zipFile.file(rid + '.json').async('string').then(function (content) {
-                                            var filename = JSON.parse(content).BlastJSON[0].File;
-                                            zipFile.file(filename).async('string').then(function (blastResults) {
-                                                var blastRes = JSON.parse(blastResults).BlastOutput2.report.results.search;
-                                                console.log(blastRes);
-                                                featureCallback(blastRes);
-                                                thisB.inProgress = false;
-                                            });
-                                        });
-                                    });
-                                    return;
-                                }
-                            };
-                            oReq.send(null);
+                            thisB.fetchZip(url, rid, featureCallback);
                         }
                     }, function (error) {
                         errorCallback('Error checking status', error);
@@ -96,9 +73,35 @@ function (
                     });
                 }, thisB.refreshRate);
             }, function (error) {
-                console.error('Error doing BLAST', error);
+                errorCallback('Error doing BLAST', error);
                 thisB.cancel();
             });
+        },
+
+        fetchZip: function (url, rid, featureCallback) {
+            var thisB = this;
+            var oReq = new XMLHttpRequest();
+            oReq.open('GET', url, true);
+            oReq.responseType = 'arraybuffer';
+
+            oReq.onload = function (/* oEvent */) {
+                clearInterval(thisB.waiting);
+                var arrayBuffer = oReq.response; // Note: not oReq.responseText
+                if (arrayBuffer) {
+                    JSZip.loadAsync(arrayBuffer).then(function (zipFile) {
+                        zipFile.file(rid + '.json').async('string').then(function (content) {
+                            var filename = JSON.parse(content).BlastJSON[0].File;
+                            zipFile.file(filename).async('string').then(function (blastResults) {
+                                var blastRes = JSON.parse(blastResults).BlastOutput2.report.results.search;
+                                featureCallback(blastRes);
+                                thisB.inProgress = false;
+                            });
+                        });
+                    });
+                    return;
+                }
+            };
+            oReq.send(null);
         }
     });
 });

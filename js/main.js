@@ -23,6 +23,7 @@ function () {
             constructor: function (/* args */) {
                 console.log('RemoteBlast plugin starting');
                 var thisB = this;
+                this.browser.config.mygeneInfo = this.browser.config.mygeneInfo || 'https://mygene.info/v3/query';
                 this.browser.config.blastURL = this.browser.config.blastURL || 'https://cors-anywhere.herokuapp.com/https://blast.ncbi.nlm.nih.gov/Blast.cgi';
                 this.browser.config.blastDB = this.browser.config.blastDB || 'nt';
                 this.browser.afterMilestone('initView', function () {

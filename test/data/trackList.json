@@ -1,17 +1,16 @@
 {
   "tracks": [
     {
-      "seqType": "dna",
-      "type": "SequenceTrack",
-      "chunkSize": 20000,
-      "label": "DNA",
-      "urlTemplate": "seq/{refseq_dirpath}/{refseq}-",
-      "key": "Reference sequence",
-      "category": "Reference sequence",
-      "storeClass": "JBrowse/Store/Sequence/StaticChunked"
+      "storeClass" : "MyVariantViewer/Store/SeqFeature/Genes_v3",
+      "urlTemplate" : "https://mygene.info/v3/query?q={refseq}:{start}-{end}&fields=all&size=1000&email=colin.diesh@gmail.com",
+      "subParts" : [
+         "exon"
+      ],
+      "type" : "CanvasFeatures",
+      "label" : "MyGene.info v3"
     }
   ],
   "formatVersion": 1,
-  "plugins": ["RemoteBlast"],
+  "plugins": ["RemoteBlast", "MyVariantViewer"],
   "classicMenu": true
 }
