@@ -2,8 +2,7 @@ define([
     'dojo/_base/declare',
     'dojo/_base/array',
     'dojo/request',
-    'dijit/focus',
-    'dijit/form/Textarea',
+    'dojo/on',
     'dijit/form/Button',
     'JBrowse/View/Dialog/WithActionBar',
     'RemoteBlast/Store/NcbiBlast'
@@ -12,8 +11,7 @@ function (
     declare,
     array,
     request,
-    focus,
-    TextArea,
+    on,
     Button,
     ActionBarDialog,
     NcbiBlast
@@ -51,16 +49,18 @@ function (
         },
 
         show: function (callback) {
+            var thisB = this;
             dojo.addClass(this.domNode, 'blastDialog');
 
             this.textarea = dojo.create('textarea', {
                 id: 'query_blast', style: {
                     width: '500px',
-                    height: '200px'
+                    height: this.height + 'px'
                 }
             });
 
             this.set('content', [
+                dojo.create('p', { 'innerHTML': 'Search NCBI BLAST '+thisB.browser.config.blastDB }),
                 dojo.create('label', { 'for': 'query_blast', innerHTML: '' }),
                 this.textarea,
                 dojo.create('p', { id: 'status_blast' }),
@@ -83,9 +83,12 @@ function (
                 return;
             }
             this.blastHandler.fetch(query, function (blastRes) {
-                dojo.destroy('results_blast');
+                dojo.byId('status_blast').innerHTML = 'Finished';
+                dojo.empty('results_blast');
                 var node = dojo.byId('results_blast');
+                console.log('here',blastRes)
                 array.forEach(blastRes.hits, function (elt, iter) {
+                    console.log('here',elt)
                     var cont = dojo.create('div', {
                         id: 'blast_res_' + iter,
                         style: {
@@ -94,18 +97,35 @@ function (
                             padding: '10px'
                         }
                     }, node);
-                    dojo.create('p', { innerHTML: 'Hit: ' + elt.description[0].accession + ' ' + elt.description[0].id }, cont);
-                    dojo.create('p', { innerHTML: 'Species: ' + elt.description[0].sciname + ' ' + elt.description[0].taxid }, cont);
-                    dojo.create('p', { innerHTML: 'Description: ' + elt.description[0].title }, cont);
-                    dojo.create('pre', { innerHTML: elt.hsps[0].hseq + '\n' + elt.hsps[0].midline + '\n' + elt.hsps[0].qseq }, cont);
+                    var e = elt.description[0];
+                    dojo.create('p', { innerHTML: 'Hit: ' + e.accession + ' ' + e.id }, cont);
+                    dojo.create('p', { innerHTML: 'Species: ' + e.sciname + ' ' + e.taxid }, cont);
+                    dojo.create('p', { innerHTML: 'Description: ' + e.title }, cont);
+                    
+                    
+                    array.forEach(elt.hsps.slice(0,10), function(hsp, jter) {
+                        if(hsp.taxid == thisB.browser.config.taxid) {
+                            console.log('here',hsp);
+                            var ref = dojo.create('a', { innerHTML: '1:'+hsp.hit_from+'..'+hsp.hit_to, href: '#' }, cont);
+                            on(ref, 'click', function() {
+                                thisB.browser.callLocation(new Location({ ref: '1', start: hsp.hit_from, end: hsp.hit_to }));
+                            });
+                        }
+                        
+                        dojo.create('div', {
+                            innerHTML: 'HSP'+jter+'\n'+hsp.hseq + '\n' + hsp.midline + '\n' + hsp.qseq,
+                            style: {
+                                background: '#aaa'
+                            }
+                        }, cont);
+                    });
                 });
-                thisB.resize();
             }, function (rtoe, waitCounter) {
                 dojo.byId('status_blast').innerHTML = 'Search submitted...Estimated time ' + (Math.round(rtoe * 100 / 60) / 100) + ' minutes...';
                 dojo.byId('waiting_blast').innerHTML = 'Waiting' + ('.'.repeat(waitCounter % 4));
             }, function (error) {
                 dojo.byId('status_blast').innerHTML = error;
-                dojo.destroy('waiting_blast');
+                dojo.empty('waiting_blast');
             });
         }
     });

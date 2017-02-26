@@ -3,6 +3,11 @@
 
 A JBrowse plugin for getting BLAST results from remote services
 
+## Install
+
+Bower is needed to install jszip dependency
+
+    bower install
 
 ## Configure
 

@@ -61,7 +61,6 @@ function (
                         } else if (stat == 'UNKNOWN') {
                             console.log('unknown', data);
                         } else if (stat == 'READY') {
-                            console.log('ready', rid);
                             clearInterval(timer);
 
                             var url = thisB.browser.config.blastURL + '?FORMAT_TYPE=JSON2&CMD=Get&RID=' + rid;
@@ -80,6 +79,7 @@ function (
                                             var filename = JSON.parse(content).BlastJSON[0].File;
                                             zipFile.file(filename).async('string').then(function (blastResults) {
                                                 var blastRes = JSON.parse(blastResults).BlastOutput2.report.results.search;
+                                                console.log(blastRes);
                                                 featureCallback(blastRes);
                                                 thisB.inProgress = false;
                                             });
